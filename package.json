@@ -3,26 +3,27 @@
   "version": "1.0.0",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn src/server.ts",
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "prisma": "prisma"
+    "dev": "doppler run -- ts-node-dev --respawn src/server.ts",
+    "build": "doppler run -- tsc",
+    "start": "doppler run -- node dist/server.js",
+    "prisma": "doppler run -- prisma"
   },
   "dependencies": {
     "@fastify/jwt": "^9.1.0",
-    "@prisma/client": "^5.12.0",
+    "@prisma/client": "^5.22.0",
     "axios": "^1.6.8",
     "bcrypt": "^5.1.1",
     "dotenv": "^16.4.5",
     "fastify": "^4.27.2",
     "fastify-plugin": "^4.5.0",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "zod": "^4.0.10"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.11.30",
-    "prisma": "^5.12.0",
+    "prisma": "^5.22.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.4.5"

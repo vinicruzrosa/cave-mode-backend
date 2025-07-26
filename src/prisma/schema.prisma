@@ -11,35 +11,65 @@ model User {
   id        String   @id @default(cuid())
   email     String   @unique
   password  String
-  tasks     Task[]
   completions TaskCompletion[]
   emergencyUsages EmergencyUsage[]
   settings  Settings?
+  routines  Routine[]
+  exceptions RoutineExceptionDay[]
+  tasks     Task[]
+}
+
+model Routine {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+  tasks       Task[]
 }
 
 model Task {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
-  isCompleted Boolean  @default(false)
-  validated   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id])
-  completions TaskCompletion[]
+  id             String          @id @default(cuid())
+  routineId      String?
+  userId         String
+  name           String
+  description    String          // ← Agora obrigatório
+  startTime      DateTime        // ← Agora obrigatório
+  endTime        DateTime?       // ← Pode ser calculado com base no startTime + duration, mas permanece opcional
+  duration       Int?            // ← Opcional, em minutos
+  requiresProof  Boolean         @default(false)
+  proofType      ProofType?      // ← Se necessário, indica o tipo de prova: TEXT, PHOTO, VIDEO, CONFIRM
+  isCompleted    Boolean         @default(false)
+  validated      Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  
+  // Relações
+  routine        Routine?        @relation(fields: [routineId], references: [id])
+  user           User            @relation(fields: [userId], references: [id])
+  completions    TaskCompletion[]
+}
+
+
+enum ProofType {
+  TEXT
+  PHOTO
+  VIDEO
 }
 
 model TaskCompletion {
-  id                     String   @id @default(cuid())
-  taskId                 String
-  userId                 String
-  completedAt            DateTime @default(now())
-  proofSubmitted         Boolean
-  proofUrl               String?
-  proofText              String?
-  usedEmergencyMode      Boolean  @default(false)
+  id                    String   @id @default(cuid())
+  taskId                String
+  userId                String
+  completedAt           DateTime @default(now())
+  proofData             String?
+  proofSubmitted        Boolean  @default(false)
+  proofUrl              String?
+  proofText             String?
+  usedEmergencyMode     Boolean  @default(false)
   emergencyJustification String?
-  task                   Task     @relation(fields: [taskId], references: [id])
-  user                   User     @relation(fields: [userId], references: [id])
+  task                  Task     @relation(fields: [taskId], references: [id])
+  user                  User     @relation(fields: [userId], references: [id])
 }
 
 model EmergencyUsage {
@@ -55,4 +85,12 @@ model Settings {
   userId             String   @unique
   emergencyModeLimit Int      @default(3)
   user               User     @relation(fields: [userId], references: [id])
+}
+
+model RoutineExceptionDay {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 } 

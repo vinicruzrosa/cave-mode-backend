@@ -1,8 +1,7 @@
 import Fastify from 'fastify';
-import dotenv from 'dotenv';
 import { registerRoutes } from './routes/index';
 
-dotenv.config();
+// dotenv.config(); // Removido - usando Doppler para variáveis de ambiente
 
 const fastify = Fastify({ logger: true });
 

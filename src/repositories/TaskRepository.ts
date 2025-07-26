@@ -1,21 +1,28 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Task, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 export class TaskRepository {
-  static async create(data: { userId: string; name: string }): Promise<any> {
-    return prisma.task.create({ data });
+  static async create(data: Prisma.TaskCreateInput): Promise<Task> {
+    // Cria uma task associando userId e name
+    return prisma.task.create({
+      data
+    });
   }
 
-  static async findByUser(userId: string): Promise<any[]> {
-    return prisma.task.findMany({ where: { userId } });
+  static async findByUser(userId: string): Promise<Task[]> {
+    return prisma.task.findMany({
+      where: {
+        userId: userId,
+      },
+    });
   }
 
-  static async findById(id: string): Promise<any | null> {
+  static async findById(id: string): Promise<Task | null> {
     return prisma.task.findUnique({ where: { id } });
   }
 
-  static async update(id: string, data: Partial<any>): Promise<any> {
+  static async update(id: string, data: Prisma.TaskUpdateInput): Promise<Task> {
     return prisma.task.update({ where: { id }, data });
   }
-} 
+}

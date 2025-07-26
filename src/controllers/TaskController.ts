@@ -1,12 +1,39 @@
 import { FastifyReply, FastifyRequest } from 'fastify';
 import { TaskService } from '../services/TaskService';
+import { z } from 'zod';
 
 export class TaskController {
-  static async create(request: FastifyRequest, reply: FastifyReply) {
+static async create(request: FastifyRequest, reply: FastifyReply) {
     const user = (request as any).user;
-    const { name } = request.body as any;
-    const task = await TaskService.createTask(user.id, name);
-    reply.send(task);
+
+    const bodySchema = z.object({
+      name: z.string().min(1, 'O nome da tarefa é obrigatório'),
+      description: z.string().min(1, 'A descrição é obrigatória'),
+      startTime: z.coerce.date({ error: 'startTime deve ser uma data válida' }),
+      validUntil: z.coerce.date({ error: 'validUntil deve ser uma data válida' }),
+      requiresProof: z.boolean(),
+      duration: z.number().int().positive().optional()
+    });
+
+    const parseResult = bodySchema.safeParse(request.body);
+
+    if (!parseResult.success) {
+      return reply.status(400).send({ error: 'Dados inválidos', issues: parseResult.error.flatten() });
+    }
+
+    const { name, description, startTime, validUntil, requiresProof, duration } = parseResult.data;
+
+    const task = await TaskService.createTask({
+      userId: user.id,
+      name,
+      description,
+      startTime,
+      endTime: validUntil,
+      requiresProof,
+      duration,
+    });
+
+    reply.status(201).send(task);
   }
 
   static async list(request: FastifyRequest, reply: FastifyReply) {

@@ -5,9 +5,39 @@ import { SettingsRepository } from '../repositories/SettingsRepository';
 import { validateImageWithHuggingFace } from '../utils/huggingFace';
 import { getCurrentWeek } from '../utils/getCurrentWeek';
 
+// Update ProofType to match Prisma enum values
+type ProofType = 'TEXT' | 'PHOTO' | 'VIDEO' | null;
+
 export class TaskService {
-  static async createTask(userId: string, name: string) {
-    return TaskRepository.create({ userId, name });
+  static async createTask({
+    userId,
+    name,
+    description,
+    startTime,
+    endTime,
+    duration,
+    requiresProof,
+    proofType = null,
+  }: {
+    userId: string;
+    name: string;
+    description: string;
+    startTime: Date;
+    endTime?: Date | undefined;
+    duration?: number;
+    requiresProof: boolean;
+    proofType?: ProofType | null;
+  }) {
+    return TaskRepository.create({
+      user: { connect: { id: userId } },
+      name,
+      description,
+      startTime,
+      endTime,
+      duration,
+      requiresProof,
+      proofType,
+    });
   }
 
   static async listTasks(userId: string) {
@@ -19,7 +49,7 @@ export class TaskService {
     taskId,
     proofData,
     usedEmergencyMode = false,
-    emergencyJustification
+    emergencyJustification,
   }: {
     userId: string;
     taskId: string;
@@ -27,7 +57,6 @@ export class TaskService {
     usedEmergencyMode?: boolean;
     emergencyJustification?: string;
   }) {
-    // Buscar task
     const task = await TaskRepository.findById(taskId);
     if (!task || task.userId !== userId) throw new Error('Task not found');
     if (task.isCompleted) throw new Error('Task already completed');
@@ -43,26 +72,25 @@ export class TaskService {
         validated = !!proofData.content;
         proofText = proofData.content;
       } else if (proofData.type === 'PHOTO' || proofData.type === 'VIDEO') {
-        // Validação Hugging Face
         const description = await validateImageWithHuggingFace(proofData.content!);
         proofUrl = proofData.content;
-        // Regras de validação
         if (description) {
+          const d = description.toLowerCase();
           if (
-            description.includes('selfie') &&
-            (description.includes('sunlight') || description.includes('morning'))
+            d.includes('selfie') &&
+            (d.includes('sunlight') || d.includes('morning'))
           ) {
             validated = true;
           } else if (
-            description.includes('pill') ||
-            description.includes('medicine') ||
-            description.includes('hand')
+            d.includes('pill') ||
+            d.includes('medicine') ||
+            d.includes('hand')
           ) {
             validated = true;
           } else if (
-            description.includes('notebook') ||
-            description.includes('writing') ||
-            description.includes('page')
+            d.includes('notebook') ||
+            d.includes('writing') ||
+            d.includes('page')
           ) {
             validated = true;
           }
@@ -72,28 +100,34 @@ export class TaskService {
       }
     }
 
-    // Emergência: checar limite semanal
     if (usedEmergencyMode) {
       const { week, year } = getCurrentWeek();
       const settings = await SettingsRepository.findByUserId(userId);
       const limit = settings?.emergencyModeLimit ?? 3;
       const count = await EmergencyUsageRepository.countByUserAndWeek(userId, week, year);
       if (count >= limit) throw new Error('Emergency mode limit reached');
-      await EmergencyUsageRepository.create({ userId, week, year });
+      await EmergencyUsageRepository.create({
+        userId,
+        week,
+        year,
+      });
     }
 
-    // Marcar tarefa como concluída
-    await TaskRepository.update(taskId, { isCompleted: true, validated });
-    // Registrar completion
+    await TaskRepository.update(taskId, {
+      isCompleted: true,
+      validated,
+    });
+
     await TaskCompletionRepository.create({
-      taskId,
-      userId,
+      task: { connect: { id: taskId } },
+      user: { connect: { id: userId } },
       proofSubmitted,
       proofUrl,
       proofText,
       usedEmergencyMode,
       emergencyJustification,
     });
+
     return { success: true };
   }
-} 
+}
