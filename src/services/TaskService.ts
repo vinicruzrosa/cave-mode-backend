@@ -11,6 +11,7 @@ type ProofType = 'TEXT' | 'PHOTO' | 'VIDEO' | null;
 export class TaskService {
   static async createTask({
     userId,
+    routineId,
     name,
     description,
     startTime,
@@ -20,6 +21,7 @@ export class TaskService {
     proofType = null,
   }: {
     userId: string;
+    routineId: string;
     name: string;
     description: string;
     startTime: Date;
@@ -30,6 +32,7 @@ export class TaskService {
   }) {
     return TaskRepository.create({
       user: { connect: { id: userId } },
+      routine: { connect: { id: routineId } },
       name,
       description,
       startTime,

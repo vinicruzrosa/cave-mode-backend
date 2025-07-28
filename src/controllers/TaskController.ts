@@ -7,6 +7,7 @@ static async create(request: FastifyRequest, reply: FastifyReply) {
     const user = (request as any).user;
 
     const bodySchema = z.object({
+      routineId: z.string().min(1, 'A rotina é obrigatória'),
       name: z.string().min(1, 'O nome da tarefa é obrigatório'),
       description: z.string().min(1, 'A descrição é obrigatória'),
       startTime: z.coerce.date({ error: 'startTime deve ser uma data válida' }),
@@ -21,10 +22,11 @@ static async create(request: FastifyRequest, reply: FastifyReply) {
       return reply.status(400).send({ error: 'Dados inválidos', issues: parseResult.error.flatten() });
     }
 
-    const { name, description, startTime, validUntil, requiresProof, duration } = parseResult.data;
+    const { routineId, name, description, startTime, validUntil, requiresProof, duration } = parseResult.data;
 
     const task = await TaskService.createTask({
       userId: user.id,
+      routineId,
       name,
       description,
       startTime,
